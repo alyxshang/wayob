@@ -1,0 +1,4 @@
+libadd
+/zig-out
+.DS_Store
+/.zig-cache

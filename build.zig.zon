@@ -1,0 +1,15 @@
+.{
+    .name = .wayob,
+    .version = "0.1.0",
+    .fingerprint = 0x14b37f6757e593ba,
+    .minimum_zig_version = "0.14.0",
+    .dependencies = .{}, 
+    .paths = .{
+        "src",
+        "clib",
+        "LICENSE",
+        "build.zig",
+        "build.zig.zon", 
+        "README.markdown"
+    },
+}
