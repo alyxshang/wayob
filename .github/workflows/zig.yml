@@ -5,16 +5,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install dependencies
+      - name: "Install dependencies."
         run: sudo apt update && sudo apt install -y build-essential curl
 
-      - name: Setup Zig
+      - name: "Setup Zig."
         uses: mlugg/setup-zig@v2
         with:
           version: 0.14.0
 
-      - name: Install ZLint
+      - name: "Install ZLint."
         run: curl -fsSL https://raw.githubusercontent.com/DonIsaac/zlint/refs/heads/main/tasks/install.sh | bash
 
-      - name: Run tests
+      - name: "Run tests."
         run: make
