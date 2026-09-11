@@ -132,4 +132,4 @@ More information on the entities inside this library can be obtained by cloning 
 ## NOTE
 
 - *Wayob* by *Alyx Shang*.
-- Licensed under the [FSL v1](https://alyxshang.boo/fair-software-license).
+- Licensed under the [FSL v1](https://alyxshang.boo/content/fair-software-license).
