@@ -5,10 +5,6 @@
 // namespace.
 const std = @import("std");
 
-// Importing the function to create
-// a formatted string.
-const allocPrint = std.fmt.allocPrint;
-
 // Importing the structure to catch
 // and handle errors.
 const WayobErr = @import("err.zig").WayobErr;

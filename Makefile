@@ -1,14 +1,10 @@
 # WAYOB by Alyx Shang.
 # Licensed under the FSL v1.
 
-build:
-	clang -shared clib/libadd.c -I clib/ -o libadd
+build: ; clang -shared clib/libadd.c -I clib/ -o libadd
 
-test: 	build
-	zig build test --summary all
+test: ; zig build test --summary all
 
-clean:	test
-	rm -rf libadd zig-out .zig-cache
+clean: ; rm -rf libadd zig-out .zig-cache
 
-lint:
-	zlint
+lint: ; zlint

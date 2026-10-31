@@ -14,7 +14,8 @@ jobs:
           version: 0.17.0
 
       - name: "Install ZLint."
-        run: curl -fsSL https://raw.githubusercontent.com/DonIsaac/zlint/refs/heads/main/tasks/install.sh | bash
+        run: |
+          curl -fsSL https://raw.githubusercontent.com/DonIsaac/zlint/refs/heads/main/tasks/install.sh | bash
 
       - name: "Run tests."
         run: |
