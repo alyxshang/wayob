@@ -73,7 +73,7 @@ make build
 make test
 ```
 
-- 5.) Clean the project, and run the linter:
+- 5.) Clean the project:
 
 
 ```Bash
@@ -152,7 +152,8 @@ More information on the entities inside this library can be obtained by cloning 
 
 ### Version 0.2.0
 
-- Migrated *Wayob* to Zig v.0.17.0
+- Improved the documentation.
+- Migrated *Wayob* to Zig v.0.17.0.
 
 ## NOTE
 
