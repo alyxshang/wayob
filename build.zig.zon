@@ -1,6 +1,6 @@
 .{
     .name = .wayob,
-    .version = "0.1.0",
+    .version = "0.2.0",
     .fingerprint = 0x14b37f6757e593ba,
     .minimum_zig_version = "0.17.0",
     .dependencies = .{}, 
