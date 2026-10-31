@@ -18,11 +18,11 @@ This repository contains the source code for a Turing-complete stack-based bytec
 
 ## INSTALLATION
 
-This Zig library uses Zig version `0.14.0`.
+This Zig library uses Zig version `0.17.0`.
 To add this library to your project, use the following command:
 
 ```Bash
-zig fetch --save git+https://github.com/alyxshang/wayob.git#v.0.1.0
+zig fetch --save git+https://github.com/alyxshang/wayob.git#v.0.2.0
 ```
 
 The following module must also be declared in your project's `build.zig`:
@@ -43,7 +43,7 @@ your_main_module.root_module.addImport("wayob", wayob_dep.module("wayob"));
 ## RUNNING TESTS
 
 Make sure you have the following tools installed and available from the
-command line: CMake, Clang, Git, ZLint for Zig v.0.14.0, and Zig v.0.14.0.
+command line: CMake, Clang, Git, ZLint for Zig v.0.17.0, and Zig v.0.17.0.
 
 - 1.) Clone the repository:
 
@@ -128,6 +128,10 @@ More information on the entities inside this library can be obtained by cloning 
 
 - Initial release.
 - Upload to GitHub.
+
+### Version 0.2.0
+
+- Migrated *Wayob* to Zig v.0.17.0
 
 ## NOTE
 

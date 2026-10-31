@@ -126,19 +126,18 @@ pub fn runInstructions(
                 const possible_fn: FrameData = const_pool.items[idx];
                 if (possible_fn == .Function){
                     const arg_count: u64 = possible_fn.Function.arg_count;
-                    var fn_const_pool: ArrayList(FrameData) = ArrayList(FrameData)
-                        .init(allocator); 
+                    var fn_const_pool: ArrayList(FrameData) = .empty;
                     defer {
-                        for (fn_const_pool.items) |item| {
-                            item.deinit(allocator);
+                        for (fn_const_pool.items) |*item| {
+                            @constCast(item).deinit(allocator);
                         }
-                        fn_const_pool.deinit();
+                        fn_const_pool.deinit(allocator);
                     }
                     for (0..arg_count) |_| {
-                        const popped: FrameData = try stack.pop();
-                        const cloned: FrameData = try popped.clone(allocator);
+                        var popped: FrameData = try stack.pop();
+                        var cloned: FrameData = try popped.clone(allocator);
                         errdefer cloned.deinit(allocator);
-                        fn_const_pool.append(cloned)
+                        fn_const_pool.append(allocator, cloned)
                            catch return WayobErr.WriteErr;
                     } 
                     const result: FrameData = try runInstructions(
@@ -165,7 +164,7 @@ pub fn runInstructions(
             },
             .STORE_CONST => {
                 const popped: FrameData = try stack.pop();
-                const_pool.append(popped)
+                const_pool.append(allocator, popped)
                     catch return WayobErr.WriteErr;
                 cursor = cursor + 1;
             },
@@ -205,19 +204,18 @@ pub fn runInstructions(
                 cursor = cursor + 1;
             },
             .CREATE_STRUCT => |idx| {
-                    var struct_fields: ArrayList(FrameData) = ArrayList(FrameData)
-                        .init(allocator); 
+                    var struct_fields: ArrayList(FrameData) = .empty;
                     errdefer {
-                        for (struct_fields.items) |item| {
-                            item.deinit(allocator);
+                        for (struct_fields.items) |*item| {
+                            @constCast(item).deinit(allocator);
                         }
-                        struct_fields.deinit();
+                        struct_fields.deinit(allocator);
                     }
                     for (0..idx) |_| {
-                        const popped: FrameData = try stack.pop();
-                        const cloned: FrameData = try popped.clone(allocator);
+                        var popped: FrameData = try stack.pop();
+                        var cloned: FrameData = try popped.clone(allocator);
                         errdefer cloned.deinit(allocator);
-                        struct_fields.append(cloned)
+                        struct_fields.append(allocator, cloned)
                            catch return WayobErr.WriteErr;
                     }
                     const data: FrameData = FrameData{
@@ -230,19 +228,18 @@ pub fn runInstructions(
                 const possible_fn: FrameData = const_pool.items[idx];
                 if (possible_fn == .ExternFunction){
                     const arg_count: u64 = possible_fn.ExternFunction.arg_count;
-                    var fn_const_pool: ArrayList(FrameData) = ArrayList(FrameData)
-                        .init(allocator); 
+                    var fn_const_pool: ArrayList(FrameData) = .empty;
                     defer {
-                        for (fn_const_pool.items) |item| {
-                            item.deinit(allocator);
+                        for (fn_const_pool.items) |*item| {
+                            @constCast(item).deinit(allocator);
                         }
-                        fn_const_pool.deinit();
+                        fn_const_pool.deinit(allocator);
                     }
                     for (0..arg_count) |_| {
-                        const popped: FrameData = try stack.pop();
-                        const cloned: FrameData = try popped.clone(allocator);
+                        var popped: FrameData = try stack.pop();
+                        var cloned: FrameData = try popped.clone(allocator);
                         errdefer cloned.deinit(allocator);
-                        fn_const_pool.append(cloned)
+                        fn_const_pool.append(allocator, cloned)
                            catch return WayobErr.WriteErr;
                     } 
                     const result: FrameData = try runExtern(

@@ -5,10 +5,6 @@
 // namespace.
 const std = @import("std");
 
-// Importing the "ArrayList" structure
-// from the standard library.
-const ArrayList = std.ArrayList;
-
 // Importing the function to create
 // a formatted string.
 const allocPrint = std.fmt.allocPrint;

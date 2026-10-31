@@ -43,9 +43,9 @@ test "Testing the module associated with the stack." {
     defer f_two.deinit(std.testing.allocator);
     try ms.push(f_one);
     try ms.push(f_two);
-    const p_one: stack.FrameData = try ms.pop();
+    var p_one: stack.FrameData = try ms.pop();
     defer p_one.deinit(std.testing.allocator);
-    const p_two: stack.FrameData = try ms.pop();
+    var p_two: stack.FrameData = try ms.pop();
     defer p_two.deinit(std.testing.allocator);
     try std.testing.expect(p_one.Integer == 3);
     try std.testing.expect(p_two.Integer == 2);
@@ -53,19 +53,19 @@ test "Testing the module associated with the stack." {
 
 // Testing the module containing basic VM functions.
 test "Testing the module containing basic VM functions." {
-    const f_one: stack.FrameData = stack.FrameData{
+    var f_one: stack.FrameData = stack.FrameData{
         .FloatingPoint = 64.8
     };
     defer f_one.deinit(std.testing.allocator);
-    const f_two: stack.FrameData = stack.FrameData{
+    var f_two: stack.FrameData = stack.FrameData{
         .FloatingPoint = 45.8
     };
     defer f_two.deinit(std.testing.allocator);
-    const i_one: stack.FrameData = stack.FrameData{
+    var i_one: stack.FrameData = stack.FrameData{
         .Integer = 6
     };
     defer i_one.deinit(std.testing.allocator);
-    const i_two: stack.FrameData = stack.FrameData{
+    var i_two: stack.FrameData = stack.FrameData{
         .Integer = 6
     };
     defer i_two.deinit(std.testing.allocator);
@@ -119,13 +119,12 @@ test "Testing the module containing basic VM functions." {
 // Testing the module containing the main function to
 // run a set of instructions.
 test "Testing the function to run instructions." {
-    var consts: std.ArrayList(stack.FrameData) = std.ArrayList(stack.FrameData)
-        .init(std.testing.allocator);
+    var consts: std.ArrayList(stack.FrameData) = .empty;
     defer {
-        for (consts.items) |item| {
+        for (consts.items) |*item| {
             item.deinit(std.testing.allocator);
         }
-        consts.deinit();
+        consts.deinit(std.testing.allocator);
     }
     const c_one: stack.FrameData = stack.FrameData {
         .Integer = 1
@@ -145,73 +144,70 @@ test "Testing the function to run instructions." {
     const c_six: stack.FrameData = stack.FrameData {
         .Bool = false
     };
-    try consts.append(c_one);
-    try consts.append(c_two);
-    try consts.append(c_three);
-    try consts.append(c_four);
-    try consts.append(c_five);
-    try consts.append(c_six);
-    var insts: std.ArrayList(inst.Instruction) = std.ArrayList(inst.Instruction)
-        .init(std.testing.allocator);
-    defer insts.deinit();
-    try insts.append(inst.Instruction{ .LOAD_CONST = 0 });
-    try insts.append(inst.Instruction{ .LOAD_CONST = 2 });
-    try insts.append(.MUL);
-    try insts.append(inst.Instruction{ .MODIFY_CONST = 0 });
-    try insts.append(inst.Instruction{ .LOAD_CONST = 2 });
-    try insts.append(inst.Instruction{ .LOAD_CONST = 3 });
-    try insts.append(.ADD);
-    try insts.append(inst.Instruction{ .MODIFY_CONST = 2 });
-    try insts.append(inst.Instruction{ .LOAD_CONST = 1 });
-    try insts.append(inst.Instruction{ .LOAD_CONST = 3 });
-    try insts.append(.ADD);
-    try insts.append(inst.Instruction{ .LOAD_CONST = 2 });
-    try insts.append(.COMPARE_LT);
-    try insts.append(inst.Instruction{ .JUMP_BACK_IF_TRUE = 13 });
-    try insts.append(inst.Instruction{ .LOAD_CONST = 0 });
-    try insts.append(.RETURN);
-    const result: stack.FrameData = try run.runInstructions(
+    try consts.append(std.testing.allocator,c_one);
+    try consts.append(std.testing.allocator,c_two);
+    try consts.append(std.testing.allocator,c_three);
+    try consts.append(std.testing.allocator,c_four);
+    try consts.append(std.testing.allocator,c_five);
+    try consts.append(std.testing.allocator,c_six);
+    var insts: std.ArrayList(inst.Instruction) = .empty;
+    defer insts.deinit(std.testing.allocator);
+    try insts.append(std.testing.allocator,inst.Instruction{ .LOAD_CONST = 0 });
+    try insts.append(std.testing.allocator,inst.Instruction{ .LOAD_CONST = 2 });
+    try insts.append(std.testing.allocator,.MUL);
+    try insts.append(std.testing.allocator,inst.Instruction{ .MODIFY_CONST = 0 });
+    try insts.append(std.testing.allocator,inst.Instruction{ .LOAD_CONST = 2 });
+    try insts.append(std.testing.allocator,inst.Instruction{ .LOAD_CONST = 3 });
+    try insts.append(std.testing.allocator,.ADD);
+    try insts.append(std.testing.allocator,inst.Instruction{ .MODIFY_CONST = 2 });
+    try insts.append(std.testing.allocator,inst.Instruction{ .LOAD_CONST = 1 });
+    try insts.append(std.testing.allocator,inst.Instruction{ .LOAD_CONST = 3 });
+    try insts.append(std.testing.allocator,.ADD);
+    try insts.append(std.testing.allocator,inst.Instruction{ .LOAD_CONST = 2 });
+    try insts.append(std.testing.allocator,.COMPARE_LT);
+    try insts.append(std.testing.allocator,inst.Instruction{ .JUMP_BACK_IF_TRUE = 13 });
+    try insts.append(std.testing.allocator,inst.Instruction{ .LOAD_CONST = 0 });
+    try insts.append(std.testing.allocator,.RETURN);
+    var result: stack.FrameData = try run.runInstructions(
         std.testing.allocator,
         &consts,
         &insts
     );
     defer result.deinit(std.testing.allocator);
-    var test_insts: std.ArrayList(inst.Instruction) = std.ArrayList(inst.Instruction)
-        .init(std.testing.allocator);
-    defer test_insts.deinit();
-    try test_insts.append(inst.Instruction{ .LOAD_CONST = 1 });
-    try test_insts.append(inst.Instruction{ .LOAD_CONST = 0 });
-    try test_insts.append(.SUB);
-    try test_insts.append(inst.Instruction{ .LOAD_CONST = 3 });
-    try test_insts.append(.DIV);
-    try test_insts.append(inst.Instruction{ .LOAD_CONST = 0 });
-    try test_insts.append(.COMPARE_GT);
-    try test_insts.append(inst.Instruction{ .LOAD_CONST = 5 });
-    try test_insts.append(.COMPARE_NEQ);
-    try test_insts.append(inst.Instruction{ .LOAD_CONST = 5 });
-    try test_insts.append(.COMPARE_EQ);
-    try test_insts.append(.STORE_CONST);
-    try test_insts.append(inst.Instruction{ .LOAD_CONST = 6 });
-    try test_insts.append(.RETURN);
-    const test_result: stack.FrameData = try run.runInstructions(
+    var test_insts: std.ArrayList(inst.Instruction) = .empty;
+    defer test_insts.deinit(std.testing.allocator);
+    try test_insts.append(std.testing.allocator,inst.Instruction{ .LOAD_CONST = 1 });
+    try test_insts.append(std.testing.allocator,inst.Instruction{ .LOAD_CONST = 0 });
+    try test_insts.append(std.testing.allocator,.SUB);
+    try test_insts.append(std.testing.allocator,inst.Instruction{ .LOAD_CONST = 3 });
+    try test_insts.append(std.testing.allocator,.DIV);
+    try test_insts.append(std.testing.allocator,inst.Instruction{ .LOAD_CONST = 0 });
+    try test_insts.append(std.testing.allocator,.COMPARE_GT);
+    try test_insts.append(std.testing.allocator,inst.Instruction{ .LOAD_CONST = 5 });
+    try test_insts.append(std.testing.allocator,.COMPARE_NEQ);
+    try test_insts.append(std.testing.allocator,inst.Instruction{ .LOAD_CONST = 5 });
+    try test_insts.append(std.testing.allocator,.COMPARE_EQ);
+    try test_insts.append(std.testing.allocator,.STORE_CONST);
+    try test_insts.append(std.testing.allocator,inst.Instruction{ .LOAD_CONST = 6 });
+    try test_insts.append(std.testing.allocator,.RETURN);
+    var test_result: stack.FrameData = try run.runInstructions(
         std.testing.allocator,
         &consts,
         &test_insts
     );
     defer test_result.deinit(std.testing.allocator);
-    var fn_call_consts: std.ArrayList(stack.FrameData) = std.ArrayList(stack.FrameData)
-        .init(std.testing.allocator);
+    var fn_call_consts: std.ArrayList(stack.FrameData) = .empty;
     defer {
-        for (fn_call_consts.items) |item| {
-            item.deinit(std.testing.allocator);
+        for (fn_call_consts.items) |*item| {
+            @constCast(item).deinit(std.testing.allocator);
         }
-        fn_call_consts.deinit();
+        fn_call_consts.deinit(std.testing.allocator);
     }
     const fcc_one: stack.FrameData = stack.FrameData{
         .Integer = 19
     };
-    const amsg: [*:0]const u8 = try std.testing.allocator.dupeZ(u8, "Welcome");
-    const namsg: [*:0]const u8 = try std.testing.allocator.dupeZ(u8, "Not Welcome");
+    const amsg: [*:0]const u8 = try std.testing.allocator.dupeSentinel(u8, "Welcome", 0);
+    const namsg: [*:0]const u8 = try std.testing.allocator.dupeSentinel(u8, "Not Welcome", 0);
     const fcc_two: stack.FrameData = stack.FrameData {
         .String = amsg
     };
@@ -221,34 +217,32 @@ test "Testing the function to run instructions." {
     const fcc_four: stack.FrameData = stack.FrameData{
         .Integer = 18
     };
-    var ioe_insts: std.ArrayList(inst.Instruction) = std.ArrayList(inst.Instruction)
-        .init(std.testing.allocator);
-    try ioe_insts.append(inst.Instruction{ .LOAD_CONST = 0 });
-    try ioe_insts.append(inst.Instruction{ .LOAD_CONST = 1 });
-    try ioe_insts.append(.COMPARE_GT);
-    try ioe_insts.append(.RETURN);
+    var ioe_insts: std.ArrayList(inst.Instruction) = .empty;
+    try ioe_insts.append(std.testing.allocator,inst.Instruction{ .LOAD_CONST = 0 });
+    try ioe_insts.append(std.testing.allocator,inst.Instruction{ .LOAD_CONST = 1 });
+    try ioe_insts.append(std.testing.allocator,.COMPARE_GT);
+    try ioe_insts.append(std.testing.allocator,.RETURN);
     const fcc_five: stack.FrameData = stack.FrameData {
         .Function = .{
             .arg_count = 2,
             .instructions = ioe_insts
         }
     };
-    try fn_call_consts.append(fcc_one);
-    try fn_call_consts.append(fcc_two);
-    try fn_call_consts.append(fcc_three);
-    try fn_call_consts.append(fcc_four);
-    try fn_call_consts.append(fcc_five);
-    var fn_call_insts: std.ArrayList(inst.Instruction) = std.ArrayList(inst.Instruction)
-        .init(std.testing.allocator);
-    defer fn_call_insts.deinit();
-    try fn_call_insts.append(inst.Instruction{ .LOAD_CONST = 0 });
-    try fn_call_insts.append(inst.Instruction{ .LOAD_CONST = 3 });
-    try fn_call_insts.append(inst.Instruction{ .CALL = 4 });
-    try fn_call_insts.append(inst.Instruction{ .JUMP_FRWD_IF_TRUE = 3});
-    try fn_call_insts.append(inst.Instruction{ .LOAD_CONST = 2 });
-    try fn_call_insts.append(inst.Instruction{ .JUMP_FRWD = 2 });
-    try fn_call_insts.append(inst.Instruction{ .LOAD_CONST = 1 });
-    try fn_call_insts.append(.RETURN);
+    try fn_call_consts.append(std.testing.allocator,fcc_one);
+    try fn_call_consts.append(std.testing.allocator,fcc_two);
+    try fn_call_consts.append(std.testing.allocator,fcc_three);
+    try fn_call_consts.append(std.testing.allocator,fcc_four);
+    try fn_call_consts.append(std.testing.allocator,fcc_five);
+    var fn_call_insts: std.ArrayList(inst.Instruction) = .empty;
+    defer fn_call_insts.deinit(std.testing.allocator);
+    try fn_call_insts.append(std.testing.allocator,inst.Instruction{ .LOAD_CONST = 0 });
+    try fn_call_insts.append(std.testing.allocator,inst.Instruction{ .LOAD_CONST = 3 });
+    try fn_call_insts.append(std.testing.allocator,inst.Instruction{ .CALL = 4 });
+    try fn_call_insts.append(std.testing.allocator,inst.Instruction{ .JUMP_FRWD_IF_TRUE = 3});
+    try fn_call_insts.append(std.testing.allocator,inst.Instruction{ .LOAD_CONST = 2 });
+    try fn_call_insts.append(std.testing.allocator,inst.Instruction{ .JUMP_FRWD = 2 });
+    try fn_call_insts.append(std.testing.allocator,inst.Instruction{ .LOAD_CONST = 1 });
+    try fn_call_insts.append(std.testing.allocator,.RETURN);
     const fn_call_test_result: stack.FrameData = try run.runInstructions(
         std.testing.allocator,
         &fn_call_consts,
@@ -259,25 +253,23 @@ test "Testing the function to run instructions." {
         std.mem.span(fn_call_test_result.String),
         "Welcome"
     );
-    var final_test_consts: std.ArrayList(stack.FrameData) = std
-        .ArrayList(stack.FrameData)
-        .init(std.testing.allocator);
+    var final_test_consts: std.ArrayList(stack.FrameData) = .empty;
     defer {
-        for (final_test_consts.items) |item| {
-            item.deinit(std.testing.allocator);
+        for (final_test_consts.items) |*item| {
+            @constCast(item).deinit(std.testing.allocator);
         }
-        final_test_consts.deinit();
+        final_test_consts.deinit(std.testing.allocator);
     }
     const ftc_one: stack.FrameData = stack.FrameData {
         .ExternFunction = .{
             .lib_name = try std
                 .testing
                 .allocator
-                .dupeZ(u8, "./libadd"),
+                .dupeSentinel(u8, "./libadd", 0),
             .function_name = try std
                 .testing
                 .allocator
-                .dupeZ(u8, "add_nums"),
+                .dupeSentinel(u8, "add_nums", 0),
             .arg_count = 2
         }
     };
@@ -287,28 +279,26 @@ test "Testing the function to run instructions." {
     const ftc_three: stack.FrameData = stack.FrameData {
         .Integer = 555
     };
-    try final_test_consts.append(ftc_one);
-    try final_test_consts.append(ftc_two);
-    try final_test_consts.append(ftc_three);
-    var final_test_insts: std.ArrayList(inst.Instruction) = std
-        .ArrayList(inst.Instruction)
-        .init(std.testing.allocator);
-    defer final_test_insts.deinit();
-    try final_test_insts.append(inst.Instruction{ .LOAD_CONST = 1 });
-    try final_test_insts.append(inst.Instruction{ .LOAD_CONST = 2 });
-    try final_test_insts.append(.MODULO);
-    try final_test_insts.append(inst.Instruction{ .CREATE_STRUCT = 1 });
-    try final_test_insts.append(.STORE_CONST);
-    try final_test_insts.append(inst.Instruction{ .LOAD_CONST = 1 });
-    try final_test_insts.append(inst.Instruction{ .LOAD_CONST = 2 });
-    try final_test_insts.append(inst.Instruction{ .EXTERN_CALL = 0 });
-    try final_test_insts.append(.RETURN);
-    const final_test_result = try run.runInstructions(
+    try final_test_consts.append(std.testing.allocator,ftc_one);
+    try final_test_consts.append(std.testing.allocator,ftc_two);
+    try final_test_consts.append(std.testing.allocator,ftc_three);
+    var final_test_insts: std.ArrayList(inst.Instruction) = .empty;
+    defer final_test_insts.deinit(std.testing.allocator);
+    try final_test_insts.append(std.testing.allocator,inst.Instruction{ .LOAD_CONST = 1 });
+    try final_test_insts.append(std.testing.allocator,inst.Instruction{ .LOAD_CONST = 2 });
+    try final_test_insts.append(std.testing.allocator,.MODULO);
+    try final_test_insts.append(std.testing.allocator,inst.Instruction{ .CREATE_STRUCT = 1 });
+    try final_test_insts.append(std.testing.allocator,.STORE_CONST);
+    try final_test_insts.append(std.testing.allocator,inst.Instruction{ .LOAD_CONST = 1 });
+    try final_test_insts.append(std.testing.allocator,inst.Instruction{ .LOAD_CONST = 2 });
+    try final_test_insts.append(std.testing.allocator,inst.Instruction{ .EXTERN_CALL = 0 });
+    try final_test_insts.append(std.testing.allocator,.RETURN);
+    var final_test_result = try run.runInstructions(
         std.testing.allocator,
         &final_test_consts,
         &final_test_insts
     );
-    final_test_result.deinit(std.testing.allocator);
+    defer final_test_result.deinit(std.testing.allocator);
     try std.testing.expect(test_result.Bool == false);
     try std.testing.expect(result.Integer == 6);
     try std.testing.expect(final_test_consts.items.len == 4);
@@ -318,7 +308,7 @@ test "Testing the function to run instructions." {
 
 // Testing the module containing functions for FFI.
 test "Testing the module containing functions for FFI." {
-    const test_frame: stack.FrameData = stack.FrameData{
+    var test_frame: stack.FrameData = stack.FrameData{
         .Integer = 4
     };
     defer test_frame.deinit(std.testing.allocator);
@@ -327,42 +317,40 @@ test "Testing the module containing functions for FFI." {
         std.testing.allocator
     );
     defer c_frame.deinit(std.testing.allocator);
-    const bc: stack.FrameData = try ffi.fromCFrame(
+    var bc: stack.FrameData = try ffi.fromCFrame(
         &c_frame,
         std.testing.allocator
     );
     defer bc.deinit(std.testing.allocator);
-    var data_frames: std.ArrayList(stack.FrameData) = std.ArrayList(stack.FrameData)
-        .init(std.testing.allocator);
+    var data_frames: std.ArrayList(stack.FrameData) = .empty;
     defer {
-        for (data_frames.items) |item| {
-            item.deinit(std.testing.allocator);
+        for (data_frames.items) |*item| {
+            @constCast(item).deinit(std.testing.allocator);
         }
-        data_frames.deinit();
+        data_frames.deinit(std.testing.allocator);
     }
-    const dupd = try std.testing.allocator.dupeZ(u8, "Hello");
-    try data_frames.append(stack.FrameData{ .String = dupd });
-    try data_frames.append(stack.FrameData{ .Integer = 8 });
-    const convd: std.ArrayList(ffi.CFrame) = try ffi.toCFrames(
+    const dupd = try std.testing.allocator.dupeSentinel(u8, "Hello", 0);
+    try data_frames.append(std.testing.allocator,stack.FrameData{ .String = dupd });
+    try data_frames.append(std.testing.allocator,stack.FrameData{ .Integer = 8 });
+    var convd: std.ArrayList(ffi.CFrame) = try ffi.toCFrames(
         &data_frames,
         std.testing.allocator
     );
     defer {
-        for (convd.items) |item| {
-            item.deinit(std.testing.allocator);
+        for (convd.items) |*item| {
+            @constCast(item).deinit(std.testing.allocator);
         }
-        convd.deinit();
+        convd.deinit(std.testing.allocator);
     }
-    var sum_args: std.ArrayList(stack.FrameData) = std.ArrayList(stack.FrameData)
-        .init(std.testing.allocator);
+    var sum_args: std.ArrayList(stack.FrameData) = .empty;
     defer {
-        for (sum_args.items) |item| {
-            item.deinit(std.testing.allocator);
+        for (sum_args.items) |*item| {
+            @constCast(item).deinit(std.testing.allocator);
         }
-        sum_args.deinit();
+        sum_args.deinit(std.testing.allocator);
     }
-    try sum_args.append(stack.FrameData{ .Integer = 111 });
-    try sum_args.append(stack.FrameData{ .Integer = 555 });
+    try sum_args.append(std.testing.allocator,stack.FrameData{ .Integer = 111 });
+    try sum_args.append(std.testing.allocator,stack.FrameData{ .Integer = 555 });
     const result = try ffi.runExtern(
         "./libadd",
         "add_nums",

@@ -1,10 +1,6 @@
 # WAYOB by Alyx Shang.
 # Licensed under the FSL v1.
 
-.PHONY: all
-
-all:	build test clean lint
-
 build:
 	clang -shared clib/libadd.c -I clib/ -o libadd
 

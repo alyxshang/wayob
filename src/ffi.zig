@@ -124,9 +124,10 @@ pub fn toCFrame(
             .payload = .{ .Integer = i }
         },
         .String => |s| {
-            const dupd: [*:0]const u8 = allocator.dupeZ(
+            const dupd: [*:0]const u8 = allocator.dupeSentinel(
                 u8,
-                std.mem.span(s)
+                std.mem.span(s),
+                0
             ) catch return WayobErr.AllocErr;
             return CFrame {
                 .tag = .String,
@@ -134,20 +135,20 @@ pub fn toCFrame(
             };
         },
         .Structure => |p| {
-            var data_list: ArrayList(CFrame) = ArrayList(CFrame)
-                .init(allocator);
+            var data_list: ArrayList(CFrame) = .empty;
             errdefer {
                 for (data_list.items) |item| {
                     item.deinit(allocator);
                 }
-                data_list.deinit();
+                data_list.deinit(allocator);
             }
             for (p.items) |item| {
                 const convd: CFrame = try toCFrame(&item, allocator);
-                data_list.append(convd)
+                data_list.append(allocator, convd)
                     catch return WayobErr.WriteErr;
             }
-            const owned_slice = data_list.toOwnedSlice() catch return WayobErr.AllocErr;
+            const owned_slice = data_list.toOwnedSlice(allocator) catch 
+                return WayobErr.AllocErr;
             return CFrame{
                 .tag = .Structure,
                 .payload = .{ 
@@ -185,26 +186,29 @@ pub fn fromCFrame(
         .Bool => return FrameData{ .Bool = sub.payload.Bool },
         .Integer => return FrameData{ .Integer = sub.payload.Integer },
         .String => {
-            const dupd: [*:0]const u8 = allocator.dupeZ(
+            const dupd: [*:0]const u8 = allocator.dupeSentinel(
                 u8,
-                std.mem.span(sub.payload.String)
+                std.mem.span(sub.payload.String),
+                0
             ) catch return WayobErr.AllocErr;
             return FrameData{ .String = dupd };
         },
         .Structure => {
-            var data_list: ArrayList(FrameData) = ArrayList(FrameData)
-                .init(allocator);
+            var data_list: ArrayList(FrameData) = .empty;
             errdefer {
-                for (data_list.items) |item| {
-                    item.deinit(allocator);
+                for (data_list.items) |*item| {
+                    @constCast(item).deinit(allocator);
                 }
-                data_list.deinit();
+                data_list.deinit(allocator);
             }
-            const frames = sub.payload.Structure.data[0..sub.payload.Structure.arg_count];
+            const frames = sub
+                .payload
+                .Structure
+                .data[0..sub.payload.Structure.arg_count];
             for (0..sub.payload.Structure.arg_count) |idx| {
                 const frame: CFrame = frames[idx];
                 const convd: FrameData = try fromCFrame(&frame, allocator);
-                data_list.append(convd)
+                data_list.append(allocator, convd)
                     catch return WayobErr.WriteErr;
             }
             return FrameData{ 
@@ -232,17 +236,16 @@ pub fn toCFrames(
     sub: *ArrayList(FrameData),
     allocator: Allocator
 ) !ArrayList(CFrame) {
-    var result: ArrayList(CFrame) = ArrayList(CFrame)
-        .init(allocator);
+    var result: ArrayList(CFrame) = .empty;
     errdefer {
         for (result.items) |item| {
             item.deinit(allocator);
         }
-        result.deinit();
+        result.deinit(allocator);
     }
     for (sub.items) |item| {
         const convd: CFrame = try toCFrame(&item, allocator);
-        result.append(convd)
+        result.append(allocator, convd)
             catch return WayobErr.WriteErr;
     }
     return result;
@@ -268,15 +271,15 @@ pub fn runExtern(
         catch return WayobErr.DynLibOpenErr;
     defer f_lib.close();
     const fn_symbol = f_lib.lookup(
-        *const fn (ptr: [*]CFrame, len: usize) callconv(.C) CFrame, 
+        *const fn (ptr: [*]CFrame, len: usize) callconv(.c) CFrame, 
         std.mem.span(fn_name)
     ) orelse return WayobErr.FnNotFound;
-    const args: ArrayList(CFrame) = try toCFrames(arguments, allocator);
+    var args: ArrayList(CFrame) = try toCFrames(arguments, allocator);
     defer {
-        for (args.items) |item| {
-            item.deinit(allocator);
+        for (args.items) |*item| {
+            @constCast(item).deinit(allocator);
         }
-        args.deinit();
+        args.deinit(allocator);
     }
     const fn_result: CFrame = fn_symbol(args.items.ptr, args.items.len);
     defer fn_result.deinit(allocator);

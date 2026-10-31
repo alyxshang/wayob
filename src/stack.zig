@@ -5,11 +5,6 @@
 // namespace.
 const std = @import("std");
 
-// Importing the "Mutex"
-// structure to lock access
-// to stack frames.
-const Mutex = std.Thread.Mutex;
-
 // Importing the "ArrayList" structure
 // from the standard library.
 const ArrayList = std.ArrayList;
@@ -64,29 +59,29 @@ pub const FrameData = union(enum) {
             .Integer => |i| return FrameData{ .Integer = i },
             .FloatingPoint => |f| return FrameData{ .FloatingPoint = f },
             .String => |s| {
-                const dupd: [*:0]const u8 = allocator.dupeZ(
+                const dupd: [*:0]const u8 = allocator.dupeSentinel(
                     u8,
-                    std.mem.span(s)
+                    std.mem.span(s),
+                    0
                 ) catch return WayobErr.AllocErr;
                 return FrameData{ .String = dupd };
             },
             .Structure => |s| {
-                var items: ArrayList(FrameData) = ArrayList(FrameData)
-                    .init(allocator);
+                var items: ArrayList(FrameData) = .empty;
                 errdefer {
-                    for (items.items) |item| {
-                        item.deinit(allocator);
+                    for (items.items) |*item| {
+                        @constCast(item).deinit(allocator);
                     }
-                    items.deinit();
+                    items.deinit(allocator);
                 }
                 for (s.items) |item| {
-                    items.append(try item.clone(allocator))
+                    items.append(allocator, try item.clone(allocator))
                         catch return WayobErr.WriteErr;
                 }
                 return FrameData{ .Structure = items };
             },
             .Function => |f| {
-                const cloned = try f.instructions.clone();
+                const cloned = try f.instructions.clone(allocator);
                 return FrameData{
                     .Function = .{
                         .arg_count = f.arg_count,
@@ -95,14 +90,16 @@ pub const FrameData = union(enum) {
                 };
             },
             .ExternFunction => |e| {
-                const dupd_l: [*:0]const u8 = allocator.dupeZ(
+                const dupd_l: [*:0]const u8 = allocator.dupeSentinel(
                     u8,
-                    std.mem.span(e.lib_name)
+                    std.mem.span(e.lib_name),
+                    0
                 ) catch return WayobErr.AllocErr;
                 errdefer allocator.free(std.mem.span(dupd_l));
-                const dupd_f: [*:0]const u8 = allocator.dupeZ(
+                const dupd_f: [*:0]const u8 = allocator.dupeSentinel(
                     u8,
-                    std.mem.span(e.function_name)
+                    std.mem.span(e.function_name),
+                    0
                 ) catch return WayobErr.AllocErr;
                 errdefer allocator.free(std.mem.span(dupd_f));
                 return FrameData {
@@ -123,20 +120,20 @@ pub const FrameData = union(enum) {
     /// resources this union
     /// may have.
     pub fn deinit(
-        self: *const FrameData,
+        self: *FrameData,
         allocator: Allocator
     ) void {
         switch (self.*) {
             .String => |s| allocator.free(
                 std.mem.span(s)
             ),
-            .Structure => |s| {
-                for (s.items) |item| {
-                    item.deinit(allocator);
+            .Structure => |*s| {
+                for (s.items) |*item| {
+                    @constCast(item).deinit(allocator);
                 }
-                s.deinit();
+                @constCast(s).deinit(allocator);
             },
-            .Function => |f| f.instructions.deinit(),
+            .Function => |*f| @constCast(f).instructions.deinit(allocator),
             .ExternFunction => |e| {
                 allocator.free(std.mem.span(e.lib_name));
                 allocator.free(std.mem.span(e.function_name));
@@ -172,7 +169,6 @@ pub const Frame = struct {
 /// A data structure 
 /// representing the Wayob stack.
 pub const Stack = struct {
-    guard: Mutex,
     current: ?*Frame, 
     allocator: Allocator,
 
@@ -183,7 +179,6 @@ pub const Stack = struct {
         allocator: Allocator
     ) Stack {
         return Stack{
-            .guard = .{},
             .current = null,
             .allocator = allocator
         };
@@ -198,8 +193,6 @@ pub const Stack = struct {
         self: *Stack,
         data: FrameData
     ) !void {
-        self.guard.lock();
-        defer self.guard.unlock();
         const new_frame_ptr = self.allocator.create(Frame)
             catch return WayobErr.AllocErr;
         new_frame_ptr.* = Frame {
@@ -220,8 +213,6 @@ pub const Stack = struct {
         self: *Stack,
     ) !FrameData { 
         if (self.current) |fr| {
-            self.guard.lock();
-            defer self.guard.unlock();
             const data = fr.data; 
             const next_top = fr.previous;
             self.allocator.destroy(fr);
@@ -241,7 +232,7 @@ pub const Stack = struct {
         self: *Stack,
     ) void {
         while (self.current) |fr| {
-            const data = fr.data;
+            var data = fr.data;
             const next_top = fr.previous;
             self.allocator.destroy(fr);
             self.current = next_top;
