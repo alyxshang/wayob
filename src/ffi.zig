@@ -38,8 +38,8 @@ pub const CFrameType = enum(c_int) {
 
 /// A structure to
 /// encapsulate data
-// about user-created
-// data structures.
+/// about user-created
+/// data structures.
 pub const CStructure = extern struct {
     data: [*]CFrame,
     arg_count: usize,
